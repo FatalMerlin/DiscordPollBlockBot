@@ -1,0 +1,32 @@
+{
+  "name": "discordpollblockbot",
+  "version": "1.0.0",
+  "description": "Discord bot that blocks polls because they can not be controlled with permissions.",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/FatalMerlin/DiscordPollBlockBot.git"
+  },
+  "keywords": [
+    "discord",
+    "bot",
+    "polls",
+    "block",
+    "delete",
+    "remove",
+    "disable"
+  ],
+  "author": "FatalMerlin <merlin.brandes@gmail.com>",
+  "license": "AGPL-3.0-only",
+  "bugs": {
+    "url": "https://github.com/FatalMerlin/DiscordPollBlockBot/issues"
+  },
+  "homepage": "https://github.com/FatalMerlin/DiscordPollBlockBot#readme",
+  "dependencies": {
+    "discord.js": "^14.14.1",
+    "dotenv": "^16.4.5"
+  }
+}
