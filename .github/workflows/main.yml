@@ -1,0 +1,65 @@
+name: Docker Image CI
+
+on:
+    push:
+        branches: ['main']
+    pull_request:
+        branches: ['main']
+
+jobs:
+    deploy:
+        name: Deploy
+        runs-on: [self-hosted, icarus]
+
+        steps:
+            - uses: actions/checkout@v4
+            - name: Build the Docker image
+              run: docker build . --file Dockerfile --tag wizbot:latest
+            - name: Deploy the Docker image
+              run: |
+                  echo Starting container...
+                  containerId=$(docker run -e DISCORD_TOKEN="$DISCORD_TOKEN" -e CLIENT_ID="$CLIENT_ID" -e RCON_ADDRESS="$RCON_ADDRESS" -e RCON_PORT="$RCON_PORT" -e RCON_PASSWORD="$RCON_PASSWORD" -l wizbot -d wizbot:latest)
+
+                  # truncate ID for later filtering, as docker uses 12 character IDs
+                  containerId=$(head -c 12 <<<$containerId)
+                  echo New container: "$containerId"
+
+                  echo Waiting for container...
+                  sleep 5
+
+                  # check if our new container is still runnning
+                  if [ -z "$(docker ps -qf "id=$containerId")" ]; then
+                      echo Failed to start container
+                      exit 1
+                  fi
+
+                  # only let container restart automatically after it has proven once
+                  # that it is a good boy and will behave
+                  echo Container started successfully!
+                  docker update --restart unless-stopped "$containerId"
+
+                  # only deploy commands after deployment, not in container
+                  echo Deploying latest commands...
+                  # why use many container when few container do trick
+                  docker exec "$containerId" node deploy-commands.js
+
+                  # get all running container IDs with wizbot label
+                  containers=$(docker ps -qf "label=wizbot")
+                  # filter out the new container
+                  containers=$(sed "/$containerId/d" <<<"$containers")
+
+                  if [ -z "$containers" ]; then
+                      echo No old containers found - this is concerning...
+                      exit 0
+                  fi
+
+                  echo Stopping old containers...
+                  docker stop "$containers"
+                  echo Removing old containers...
+                  docker rm "$containers"
+              env:
+                  DISCORD_TOKEN: ${{ secrets.DISCORD_TOKEN }}
+                  CLIENT_ID: ${{ secrets.CLIENT_ID }}
+                  RCON_ADDRESS: ${{ secrets.RCON_ADDRESS }}
+                  RCON_PORT: ${{ secrets.RCON_PORT }}
+                  RCON_PASSWORD: ${{ secrets.RCON_PASSWORD }}
